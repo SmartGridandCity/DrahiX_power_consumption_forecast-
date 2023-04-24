@@ -23,13 +23,13 @@ To use the code, you need to have TensorFlow installed in your environment. The 
 
 
 
-##Contributors
+## Contributors
 - [Aurus Aurélien](https://github.com/Aurel456)\n
 
-##Acknowledgments
+## Acknowledgments
 [Guerard Guillaume]
 [Pankovits Petronela-Valeria]
 [Cherif Tahar]
 
-#Dataset Source 
+## Dataset Source 
 [SIRTA](https://sirta.ipsl.fr)
