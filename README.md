@@ -1,17 +1,17 @@
 # DrahiX Power Consumption Forecast
 This repository provides a non-stationary time series forecast benchmark using DrahiX power consumption dataset. The dataset has a 1-hour granularity and contains 42,481 rows from 2016 to 2021. The data is from a single building divided into 7 zones (T1 to T7) and the sum of all columns (TGBT).
 
-## Implementation\n\n
+## Implementation
 The deep learning models for the forecast were implemented using TensorFlow. The following models were used:
 
-- CNN-LTSM\n
-- Seq2Seq\n
-- TCN-LTSM\n
-- Attention-BiLTSM\n
-- Seq2Seq-Attention\n
-- Multihead-Attention\n
-- Time2Vec-BiLTSM\n
-- Time2Vec-Transformer\n
+- CNN-LTSM
+- Seq2Seq
+- TCN-LTSM
+- Attention-BiLTSM
+- Seq2Seq-Attention
+- Multihead-Attention
+- Time2Vec-BiLTSM
+- Time2Vec-Transformer
 
 The benchmark for the models ranges from 1 to 24 hours, with 168 and 672 hours of window data on the 8 columns.
 
