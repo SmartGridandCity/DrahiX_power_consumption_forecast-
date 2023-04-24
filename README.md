@@ -16,7 +16,7 @@ The deep learning models for the forecast were implemented using TensorFlow. The
 The benchmark for the models ranges from 1 to 24 hours, with 168 and 672 hours of window data on the 8 columns.
 
 ## Dataset
-The dataset can be found in the data directory. It is stored in a CSV format and can be accessed using pandas or any other tool for data analysis. The dataset has a total size of approximately 3.2 MB.
+The dataset can be found in the data directory. It is stored in a CSV format and can be accessed using pandas or any other tool for data analysis. The dataset has a total size of approximately 3.7 MB.
 
 ## Usage
 To use the code, you need to have TensorFlow installed in your environment. The code is written in Python,in a Notebook.
