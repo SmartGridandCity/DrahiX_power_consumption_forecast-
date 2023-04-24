@@ -1,5 +1,5 @@
 # DrahiX Power Consumption Forecast
-This repository provides a non-stationary time series forecast benchmark using DrahiX power consumption dataset. The dataset has a 1-hour granularity and contains 42,481 rows from 2016 to 2021. The data is from a single building divided into 7 zones (T1 to T7) and the sum of all columns (TGBT).
+This repository provides a ***non-stationary time series forecast benchmark*** using DrahiX power consumption dataset. The dataset has a 1-hour granularity and contains 42,481 rows from 2016 to 2021. The data is from a single building divided into 7 zones (T1 to T7) and the sum of all columns (TGBT).
 
 ## Implementation
 The deep learning models for the forecast were implemented using TensorFlow. The following models were used:
