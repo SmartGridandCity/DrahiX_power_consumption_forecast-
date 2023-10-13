@@ -6,6 +6,8 @@ from sklearn.preprocessing import StandardScaler
 from scipy.interpolate import BSpline
 from tsmoothie.smoother import ExponentialSmoother, KalmanSmoother
 
+from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.preprocessing import StandardScaler
 
 def create_features(df,Fourier_terms=True, B_spline_features=True):
     """
@@ -166,7 +168,10 @@ def denoise_signal(signal, wavelet='db4', level=4):
     denoised_signal = pywt.waverec(coeffs, wavelet)
 
     # Truncate denoised_signal to match df.index length
-    denoised_signal = denoised_signal[:len(df.index)]
+    # denoised_signal = denoised_signal[:len(df.index)]
+    denoised_signal = denoised_signal[:len(signal)]
+
+    
 
     return denoised_signal
 
@@ -256,3 +261,244 @@ def smooth_data_Kalman(df, component='level_longseason', component_noise={'level
     smoother.smooth(df.T)
     smooth_data = pd.DataFrame(smoother.smooth_data.T, columns=df.columns, index=df.index)
     return smooth_data
+
+
+########   ROLLING STATISTICS
+
+
+def Rolling_statistics(data, window, target):
+    # Parameter validation
+    if not isinstance(data, pd.DataFrame):
+        raise ValueError("data parameter must be a pandas DataFrame")
+    if not isinstance(window, int) or window <= 0:
+        raise ValueError("window parameter must be a positive integer")
+    if target not in data.columns:
+        raise ValueError("target parameter must be a valid column in the data DataFrame")
+
+    # Error handling
+    if len(data) < window:
+        raise ValueError("window size cannot be larger than the length of the DataFrame")
+
+    # Compute rolling statistics
+    data['rolling_24_mean'] = data[target].rolling(window=24).mean()
+    data['rolling_24_std'] = data[target].rolling(window=24).std()
+    if window >= 7*24:
+        data['rolling_7day_mean'] = data[target].rolling(window=7*24).mean()
+        data['rolling_7day_std'] = data[target].rolling(window=7*24).std()
+    if window >= 7*24*2:
+        data['rolling_2week_mean'] = data[target].rolling(window=24*7*2).mean()
+        data['rolling_2week_std'] = data[target].rolling(window=24*7*2).std()
+    if window >= 7*24*4:
+        data['rolling_4week_mean'] = data[target].rolling(window=24*7*4).mean()
+        data['rolling_4week_std'] = data[target].rolling(window=24*7*4).std()
+        
+        # Compute rolling skewness and kurtosis over a window of size 24*7*4
+        rolling_skewness = []
+        rolling_kurtosis = []
+
+        for i in range(window, len(data)+1):
+            vals = data.iloc[i-window:i, :][target].values[[0, 24, 48, 72]]
+            rolling_skewness.append(pd.Series(vals).skew())
+            rolling_kurtosis.append(pd.Series(vals).kurt())
+        data['rolling_4week_skew'] = pd.Series(rolling_skewness, index=data.index[window-1:])
+        data['rolling_4week_kurt'] = pd.Series(rolling_kurtosis, index=data.index[window-1:])
+
+    data.dropna(inplace=True)
+
+    return data
+
+
+############### feature selection
+
+
+def feature_selection_dataframe(data,target_column='TGBT' ,k_best_features = 10):
+  data=data.copy()
+  # Separate the target variable from the features
+  y = data[target_column]
+  # Define a list of columns to drop
+  columns_to_drop = ['TGBT','T1','T2','T3','T4','T5','T6','T7']
+
+  X = data.copy()
+  # Check if each column exists in the DataFrame, and drop it if it does
+  for column in columns_to_drop:
+      if column in data.columns:
+          X = X.drop(column, axis=1)
+
+
+  # Select the top 10 features based on the F-test
+  selector = SelectKBest(score_func=f_regression, k=k_best_features)
+  X_new = selector.fit_transform(X, y)
+
+  # Get the names of the selected features
+  selected_features = X.columns[selector.get_support()]
+  print(f"selected_features : {selected_features}")
+
+  df_new = pd.DataFrame(X_new, columns=selected_features, index= data.index)
+  df_new[target_column] = y
+
+  return df_new
+
+##################    UNIVARIATE
+
+
+
+def delete_every_nth_row(df, n):
+    """
+    This function takes in a pandas DataFrame and deletes every nth row from it. The value of n represents the size of the window or the number of forecasted values.
+    It returns a new DataFrame with every nth row deleted.
+
+    Parameters:
+        df : pandas DataFrame
+            The input DataFrame.
+        n : int
+            The frequency of rows to be deleted.
+
+    Returns:
+        pandas DataFrame
+            A new DataFrame with every nth row removed.
+
+    Example:
+        df = pd.DataFrame({'A': [1, 2, 3, 4, 5, 6], 'B': [7, 8, 9, 10, 11, 12]})
+        new_df = delete_every_nth_row(df, n=2)
+
+        # new_df:
+        #    A   B
+        # 0  1   7
+        # 2  3   9
+        # 4  5  11
+    """
+
+    mask = pd.Series([True if i % n == 0 else False for i in range(len(df))])
+    mask.index = df.index
+    return df[mask]
+
+
+def shiftting_data(data:pd.DataFrame,n_in:int,n_out:int,Target_column:str,dropna:bool=True)-> Tuple[pd.DataFrame,List[str]]:
+    """
+    This function takes a DataFrame and creates new columns by shifting the values of the Target_column by a specified number of positions.
+    It takes inputs such as the number of time steps to shift the Target_column backwards and forwards, the name of the Target_column, 
+    and a boolean value indicating whether or not to drop the rows with missing values. It returns the modified DataFrame and a list of the names of the new columns.
+
+    Parameters:
+        data : pandas DataFrame
+            The input DataFrame.
+        n_in : int
+            The number of time steps to shift the Target_column backwards.
+        n_out : int
+            The number of time steps to shift the Target_column forwards.
+        Target_column : str
+            The name of the target column to shift.
+        dropna : bool, optional
+            A boolean value indicating whether or not to drop rows with missing values. Default is True.
+
+    Returns:
+        shifted_df : pandas DataFrame
+            The modified DataFrame with new columns representing the shifted values of the Target_column.
+        new_columns : list of str
+            A list of the names of the new columns.
+
+    Example:
+        df = pd.DataFrame({'Date': ['2021-01-01', '2021-01-02', '2021-01-03'], 'Value': [10, 20, 30]})
+        shifted_df, new_columns = shiftting_data(df, n_in=2, n_out=3, Target_column='Value', dropna=True)
+
+        # shifted_df:
+        #         Date  Value  Value -1h  Value -2h  Value +1h  Value +2h  Value +3h
+        # 2 2021-01-03     30       20.0       10.0        NaN        NaN        NaN
+
+        # new_columns:
+        # ['Value', 'Value -1h', 'Value -2h', 'Value +1h', 'Value +2h', 'Value +3h']
+    """
+    
+    df=data.copy()
+    TARGET=str(Target_column)
+    col_name=[TARGET]
+    
+    for k in range(1,n_in+1):
+        col=f'{TARGET} -{k}h'
+        df[col]=df[TARGET].shift(k)
+        col_name.append(col)
+        
+    for k in range(1,n_out+1):
+        col=f'{TARGET} +{k}h'
+        df[col]=df[TARGET].shift(-k)
+        # col_name.append(col)
+    
+    df.dropna(inplace=True)
+    
+    return df,col_name
+
+
+### ??????????????????????????????????????????????????????????????????????????????? Univariate_X_Y a modifier
+from scipy.stats import skew
+from scipy.stats import kurtosis
+def Univariate_X_Y(df,window_size=24,target=24, Target_column = 'TGBT'):
+    
+    if Target_column != 'AirTemp':
+        df = df[['AirTemp', Target_column]].copy()
+
+        # create shifted dataset
+        dataT,colname=shiftting_data(df,n_in=window_size-1,n_out=target,Target_column=Target_column)
+
+        # # search for the temperature ----> creates Nan values ...
+        # if window_size >=24:
+        #     dataT2,_=shiftting_data(df,n_in=24-1,n_out=0,Target_column='AirTemp')
+
+        # else:
+        #     dataT2,_=shiftting_data(df,n_in=window_size-1,n_out=0,Target_column='AirTemp')
+
+        # search for the temperature
+        dataT2,_=shiftting_data(df,n_in=window_size-1,n_out=0,Target_column='AirTemp')
+        dataT2 = dataT2[:-target]
+
+        # fuse
+        dataT = pd.concat([dataT2, dataT], axis=1, join='outer')
+        #  pandas remove duplicate columns
+        dataT = dataT.loc[:,~dataT.columns.duplicated()].copy()
+
+        # delete repeting row based on target
+        dataT = delete_every_nth_row(dataT,target)
+        dataT['Skew'] = dataT[colname].apply(lambda x: skew(x), axis=1)
+        dataT['kurtosis'] = dataT[colname].apply(lambda x: kurtosis(x), axis=1)
+
+    else :
+        df = df[['AirTemp']].copy()
+
+        # create shifted dataset
+        dataT,colname=shiftting_data(df,n_in=window_size-1,n_out=target,Target_column=Target_column)
+        # delete repeting row based on target
+        dataT = delete_every_nth_row(dataT,target)
+
+        dataT['Skew'] = dataT[colname].apply(lambda x: skew(x), axis=1)
+        dataT['kurtosis'] = dataT[colname].apply(lambda x: kurtosis(x), axis=1)
+
+
+    # check_missing_dates(dataT,f'{target}H')
+    
+    # split train and validation
+    n = len(dataT)
+    train_T = dataT[0:int(n*0.9)]
+    val_T = dataT[int(n*0.9):]
+    
+    # FEATURES and TARGET
+    FEATURES=[col for col in dataT.columns if '+' not in col]
+    TARGET=[col for col in dataT.columns if '+' in col]
+    
+    X_train_T=train_T[FEATURES]
+    y_train_T=train_T[TARGET]
+
+    X_val_T=val_T[FEATURES]
+    y_val_T=val_T[TARGET]
+    
+    return X_train_T, y_train_T , X_val_T , y_val_T
+ 
+    
+# X_train, y_train , X_val , y_val = Univariate_X_Y(df = df_Kalman_filtered,window_size=24,target=24, Target_column = 'TGBT')
+# print(X_train.shape)
+# print(y_train.shape)
+# print(X_val.shape)
+# print(y_val.shape)
+
+##################    MULTIVARIATE
+
+
+  

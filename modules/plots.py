@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import seasonal_decompose
+from matplotlib import rcParams
+from statsmodels.graphics.tsaplots import plot_acf
 
 
 def plot_saisonal_decomp(data):
@@ -37,4 +39,17 @@ def plot_saisonal_decomp(data):
     axes[3].plot(df_seasonality['residual'][-500:],label='residual')
 
     plt.legend()
+    plt.show()
+
+
+def print_autoCorr(df, k=30):
+    """AutoCorrelation for k days
+
+    Args:
+        df (pandas.DataFrame): _description_. the Dataframe
+        k (int, optional): _description_. Defaults to 30.
+    """
+    rcParams["figure.figsize"] = 14, 2
+    for col in df.columns:
+        plot_acf(df[col], lags=24*30,use_vlines =False,title=f'{col} Autocorrelation for 1 month')
     plt.show()
