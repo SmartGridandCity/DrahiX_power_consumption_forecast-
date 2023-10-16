@@ -40,7 +40,8 @@ from keras.models import Sequential, Model , load_model
 from keras.layers import LSTM, Dense, BatchNormalization, RepeatVector, TimeDistributed, Activation, Input, Lambda, Bidirectional, GlobalMaxPool1D
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Embedding, Dropout, dot, multiply, concatenate, Layer
 from keras.callbacks import EarlyStopping, Callback, ModelCheckpoint
-from keras.utils.vis_utils import plot_model, model_to_dot
+# from keras.utils.vis_utils import plot_model, model_to_dot
+from tensorflow.keras.utils import plot_model
 import keras.backend as K
 
 from keras_multi_head import MultiHead, MultiHeadAttention

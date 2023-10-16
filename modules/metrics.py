@@ -82,7 +82,7 @@ def PRINT_SCORE(y_val, y_pred):
     print("DTW : ",DTW(np.double(y_pred),np.double(y_val)))
     
 
-def SCORE_2(model_name, y_pred, y_val, window_size, steps_ahead, target_column, RESULT_3=RESULT_3 ):
+def SCORE_2(model_name, y_pred, y_val, window_size, steps_ahead, target_column, RESULT_3 ):
     
     if isinstance(y_val, np.ndarray):y_val=y_val.ravel()
     if isinstance(y_val, pd.DataFrame):y_val=y_val.values.ravel()
@@ -105,6 +105,6 @@ def SCORE_2(model_name, y_pred, y_val, window_size, steps_ahead, target_column, 
 
 if __name__ == "__main__":
     
-    RESULT=pd.DataFrame(columns=["model_name","RMSE","MAPE","SMAPE","DTW","RdR_score"])
-    RESULT_2=pd.DataFrame(columns=["model_name","RMSE","MAPE","SMAPE","DTW"])
-    RESULT_3=pd.DataFrame(columns=["model_name","window_size","steps_ahead","target_column","RMSE","MAPE","SMAPE","DTW"])
+    RESULT  = pd.DataFrame(columns=["model_name","RMSE","MAPE","SMAPE","DTW","RdR_score"])
+    RESULT_2= pd.DataFrame(columns=["model_name","RMSE","MAPE","SMAPE","DTW"])
+    RESULT_3= pd.DataFrame(columns=["model_name","window_size","steps_ahead","target_column","RMSE","MAPE","SMAPE","DTW"])

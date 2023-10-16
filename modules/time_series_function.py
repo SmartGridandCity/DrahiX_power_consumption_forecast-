@@ -9,6 +9,9 @@ from tsmoothie.smoother import ExponentialSmoother, KalmanSmoother
 from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.preprocessing import StandardScaler
 
+from typing import Tuple, List
+
+
 def create_features(df,Fourier_terms=True, B_spline_features=True):
     """
     Create time series features based on time series index, also can add :
@@ -267,6 +270,22 @@ def smooth_data_Kalman(df, component='level_longseason', component_noise={'level
 
 
 def Rolling_statistics(data, window, target):
+    """
+    Calculate rolling statistics including mean, standard deviation, skewness, and kurtosis for a specified target column
+    in a pandas DataFrame.
+
+    Parameters:
+    data (pd.DataFrame): Input data as a pandas DataFrame.
+    window (int): Size of the rolling window for computations.
+    target (str): Name of the target column in the DataFrame.
+
+    Returns:
+    pd.DataFrame: DataFrame with computed rolling statistics.
+
+    Raises:
+    ValueError: If input data is not a pandas DataFrame, window is not a positive integer, 
+                target column does not exist, or window size is larger than the DataFrame length.
+    """
     # Parameter validation
     if not isinstance(data, pd.DataFrame):
         raise ValueError("data parameter must be a pandas DataFrame")
@@ -281,27 +300,33 @@ def Rolling_statistics(data, window, target):
 
     # Compute rolling statistics
     data['rolling_24_mean'] = data[target].rolling(window=24).mean()
-    data['rolling_24_std'] = data[target].rolling(window=24).std()
+    data['rolling_24_std']  = data[target].rolling(window=24).std()
+    
+
+    # Compute rolling skewness and kurtosis over a window of size 24
+    rolling_24_skew = data[target].rolling(window=24, closed = 'both').apply(lambda x: pd.Series(x).skew())
+    rolling_24_kurt = data[target].rolling(window=24, closed = 'both').apply(lambda x: pd.Series(x).kurt())
+    data['rolling_24_skew'] = rolling_24_skew
+    data['rolling_24_kurt'] = rolling_24_kurt
+    
     if window >= 7*24:
         data['rolling_7day_mean'] = data[target].rolling(window=7*24).mean()
         data['rolling_7day_std'] = data[target].rolling(window=7*24).std()
-    if window >= 7*24*2:
-        data['rolling_2week_mean'] = data[target].rolling(window=24*7*2).mean()
-        data['rolling_2week_std'] = data[target].rolling(window=24*7*2).std()
-    if window >= 7*24*4:
-        data['rolling_4week_mean'] = data[target].rolling(window=24*7*4).mean()
-        data['rolling_4week_std'] = data[target].rolling(window=24*7*4).std()
-        
-        # Compute rolling skewness and kurtosis over a window of size 24*7*4
-        rolling_skewness = []
-        rolling_kurtosis = []
 
-        for i in range(window, len(data)+1):
-            vals = data.iloc[i-window:i, :][target].values[[0, 24, 48, 72]]
-            rolling_skewness.append(pd.Series(vals).skew())
-            rolling_kurtosis.append(pd.Series(vals).kurt())
-        data['rolling_4week_skew'] = pd.Series(rolling_skewness, index=data.index[window-1:])
-        data['rolling_4week_kurt'] = pd.Series(rolling_kurtosis, index=data.index[window-1:])
+        if window >= 7*24*4:
+            data['rolling_4week_mean'] = data[target].rolling(window=24*7*4).mean()
+            data['rolling_4week_std'] = data[target].rolling(window=24*7*4).std()
+            
+            # # Compute rolling skewness and kurtosis over a window of size 24*7*4
+            # rolling_skewness = []
+            # rolling_kurtosis = []
+
+            # for i in range(window, len(data)+1):
+            #     vals = data.iloc[i-window:i, :][target].values[[0, 24, 48, 72]]
+            #     rolling_skewness.append(pd.Series(vals).skew())
+            #     rolling_kurtosis.append(pd.Series(vals).kurt())
+            # data['rolling_4week_skew'] = pd.Series(rolling_skewness, index=data.index[window-1:])
+            # data['rolling_4week_kurt'] = pd.Series(rolling_kurtosis, index=data.index[window-1:])
 
     data.dropna(inplace=True)
 
