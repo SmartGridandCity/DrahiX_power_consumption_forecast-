@@ -24,7 +24,8 @@ To use the code, you need to have TensorFlow installed in your environment. The 
 
 
 ## Contributors
-- [Aurus Aurélien](https://github.com/Aurel456)
+- [Aurus Aurélien]
+- [Guerard Guillaume]
 
 ## Acknowledgments
 - [Guerard Guillaume]
